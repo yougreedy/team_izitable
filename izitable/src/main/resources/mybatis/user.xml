@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="user">
+
+	<resultMap type="User" id="UserMap">
+		<id column="no" property="userNo"/>
+		<result column="email" property="userEmail"/>
+		<result column="pwd" property="userPwd"/>
+		<result column="phone" property="userPhone"/>
+		<result column="phone_cert" property="userPhoneCert"/>
+		<result column="name" property="userName"/>
+		<result column="reg_date" property="userRegDate"/>		
+	</resultMap>
+	
+	<select id="list" resultMap="UserMap">
+		SELECT * FROM tbl_user
+		LIMIT #{offset}, #{perPage}
+	</select>
+	
+	<select id="total" resultType="Integer">
+		SELECT COUNT(*) FROM tbl_user
+	</select>
+	
+	<select id="item" resultMap="UserMap">
+		SELECT * FROM tbl_user
+		WHERE no = #{userNo}
+	</select>
+	
+	<update id="update">
+		UPDATE tbl_user
+		SET email = name = #{userName}, email = #{userEmail}, phone = #{userPhone}, reg_date = #{userRegDate}
+		WHERE no = #{userNo}
+	</update>
+	
+	<delete id="delete">
+		DELETE FROM tbl_user
+		WHERE no = #{userNo}
+	</delete>
+	
+	<insert id="add">
+		INSERT INTO tbl_user (email, pwd, phone, phone_cert, name, reg_date )
+		VALUES ( #{userEmail}, #{userPwd}, #{userPhone}, #{userPhoneCert}, #{userName}, NOW() )
+	</insert>
+	
+	<select id="login" resultMap="UserMap">
+		SELECT * FROM tbl_user
+		WHERE email = #{userEmail}
+	</select>
+	
+	<select id="duplicateCheck" resultType="java.lang.Integer">
+		SELECT 
+			COUNT(*) CNT 
+		FROM tbl_user
+		WHERE email = #{userEmail}
+	</select>
+
+</mapper>

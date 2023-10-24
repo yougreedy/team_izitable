@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="booking">
+
+	<resultMap type="Booking" id="BookingMap">
+		<id column="no" property="bookingNo"/>
+		<result column="user_no" property="userNo"/>
+		<result column="shop_no" property="shopNo"/>
+		<result column="date" property="bookingDate"/>
+		<result column="time" property="bookingTime"/>
+		<result column="mem_num" property="bookingMemNum"/>
+		
+		<result column="email" property="userEmail"/>
+		<result column="phone" property="userPhone"/>
+
+		<result column="name" property="userName"/>
+		
+		<result column="date" property="bookingDate"/>
+		<result column="time" property="bookingTime"/>
+		
+		<result column="table_name" property="tableName"/>
+		<result column="table_num" property="tableNumber"/>
+		
+		<result column="user_name" property="userName"/>
+		<result column="comp_name" property="compName"/>
+	</resultMap>
+	
+	<resultMap type="ShopTime" id="shopTimeMap">
+		<id column="no" property="timeNo"/>
+		<result column="shop_no" property="shopNo"/>
+		<result column="day" property="timeDay"/>
+		<result column="hour" property="timeHour"/>
+	</resultMap>
+	
+	<resultMap type="ShopTable" id="shopTableMap">
+		<id column="no" property="tableNo"/>
+		<result column="shop_no" property="shopNo"/>
+		<result column="name" property="tableName"/>
+		<result column="number" property="tableNumber"/>
+	</resultMap>
+	
+	<select id="list" resultMap="BookingMap">
+		SELECT * FROM tbl_booking b
+		JOIN tbl_user u ON b.user_no = u.no JOIN tbl_shop s ON b.shop_no = s.no 
+		ORDER BY date DESC, time DESC
+		LIMIT #{offset}, #{perPage}
+	</select>
+	
+	<select id="total" resultType="Integer">
+		SELECT COUNT(*) FROM tbl_booking
+	</select>
+	
+	<select id="totalShop" resultType="Integer">
+		SELECT COUNT(*) FROM tbl_booking
+		WHERE shop_no = #{shopNo}
+	</select>
+	
+	<select id="totalUser" resultType="Integer">
+		SELECT COUNT(*) FROM tbl_booking
+		WHERE user_no = #{userNo}
+	</select>
+	
+	<insert id="add">
+		INSERT INTO tbl_booking (user_no, shop_no, date, time, table_no, mem_num, table_num, message, table_name )
+		VALUES ( #{userNo}, #{shopNo}, #{bookingDate}, #{bookingTime}, #{tableNo}, #{bookingMemNum}, ${tableNumber}, #{message}, #{tableName} )
+	</insert>
+	
+	<select id="userBookingList" resultMap="BookingMap">
+		SELECT tbl_booking.*, tbl_shop.* 
+		FROM tbl_booking JOIN tbl_shop ON tbl_booking.shop_no = tbl_shop.no
+		WHERE tbl_booking.user_no = #{userNo}
+		ORDER BY date DESC, time DESC
+		LIMIT #{offset}, #{perPage}
+	</select>
+	
+	<select id="userBookingDelete">
+		DELETE FROM tbl_booking
+		WHERE no = #{bookingNo}
+	</select>
+	
+	<select id="shopBookingList" resultMap="BookingMap">
+		SELECT tbl_booking.*, tbl_user.* 
+		FROM tbl_booking JOIN tbl_user ON tbl_booking.user_no = tbl_user.no
+		WHERE tbl_booking.shop_no = #{shopNo}
+		ORDER BY date DESC, time DESC
+		LIMIT #{offset}, #{perPage}
+	</select>
+	
+	<select id="shopBookingUpdate">
+		UPDATE tbl_booking
+		SET date = #{bookingDate}, time = #{bookingTime}, mem_num = #{bookingMemNum}
+		WHERE no = #{bookingNo}
+	</select>
+	
+	<select id="shopBookingDelete">
+		DELETE FROM tbl_booking
+		WHERE no = #{bookingNo}
+	</select>
+	
+	<select id="bookingTimeList" resultMap="shopTimeMap">
+		SELECT hour FROM tbl_shop_time
+		WHERE shop_no = #{shopNo} and day = DAYOFWEEK(#{bookingDate})
+	</select>
+	
+	<select id="bookingTableList" resultMap="shopTableMap">
+		SELECT DISTINCT number
+		FROM tbl_shop_table
+		WHERE shop_no = #{shopNo}
+		AND
+		no NOT IN 
+		(
+		SELECT a.table_no
+		FROM (
+		SELECT tbl_shop_table.no table_no, tbl_shop_table.shop_no, tbl_shop_table.name, tbl_shop_table.number, tbl_shop_time.no time_no, tbl_shop_time.day, tbl_shop_time.hour 
+		FROM tbl_shop_table, tbl_shop_time
+		WHERE tbl_shop_table.shop_no = tbl_shop_time.shop_no 
+			AND tbl_shop_time.shop_no = #{shopNo}
+			AND tbl_shop_time.day = DAYOFWEEK(#{bookingDate})
+			AND tbl_shop_time.hour = #{bookingTime}
+		) a
+		LEFT JOIN tbl_booking ON a.table_no = tbl_booking.table_no AND a.hour = tbl_booking.time
+		LEFT JOIN tbl_user ON tbl_booking.user_no = tbl_user.no
+		LEFT JOIN tbl_shop_time ON a.time_no = tbl_shop_time.no
+		WHERE tbl_booking.date = #{bookingDate}
+		ORDER BY tbl_shop_time.hour, a.table_no
+		)
+		ORDER BY number
+	</select>
+	
+	<select id="selectTable" resultMap="shopTableMap">
+		SELECT no, number, name
+		FROM tbl_shop_table
+		WHERE shop_no = #{shopNo} AND number = #{tableNumber}
+		AND
+		no NOT IN 
+		(
+		select table_no from tbl_booking where shop_no = #{shopNo} and date = #{bookingDate} and time = #{bookingTime}
+		)
+		LIMIT 1
+	</select>
+	
+</mapper>
